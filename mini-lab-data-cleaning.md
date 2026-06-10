@@ -67,3 +67,13 @@ Your script should output a `sanitized_sample.json` that is:
 ### Discussion Question
 "Why did we use **ETL** (Cleaning before storage) for the PII masking instead of **ELT** (Cleaning after storage)?"
 *(Hint: Think about where the raw PII would be sitting if we used ELT).*
+
+**Answer:**
+
+We use ETL (clean before storage) for PII masking because with ELT, the raw, unmasked PII (real names, full emails) would first land in the "Load" destination — i.e., the Vector DB / data lake — even if only temporarily. That creates several problems:
+
+1. **Exposure window**: The raw PII sits in the storage system, accessible to anyone with DB or embedding access, before any cleaning step runs.
+2. **Embedding leakage**: For a Vector DB specifically, the raw PII could get embedded into vectors *before* the transform step — and PII can't be "un-embedded" from a vector. The only fix would be deleting and re-embedding everything, which is wasteful and risky.
+3. **Compliance/audit risk**: Logs, backups, or replication during the load step could capture the toxic data, creating extra copies that need to be tracked down and purged later.
+
+By cleaning first (ETL), PII never touches the storage layer at all — there's no exposure window and no leaked copies to clean up afterward.
